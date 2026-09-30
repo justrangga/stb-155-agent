@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import json
+import random
 import logging
 from dotenv import load_dotenv
 
@@ -83,14 +84,16 @@ def main():
         except Exception:
             pass
 
-    # State tracking
+    # State tracking & Zerebro-style high-frequency dynamic cadence
     last_balance = current_balance
     last_tweet_time = 0
     last_promo_time = 0
-    tweet_interval_seconds = int(os.getenv("TWEET_INTERVAL_SECONDS", "7200")) # Default 2 jam
-    promo_interval_seconds = int(os.getenv("PROMO_INTERVAL_SECONDS", "3600")) # Default 1 jam
 
-    logger.info("Agent loop aktif. Memulai pemantauan rutin, mention auto-reply, dan strategic promotion...")
+    # Jadwal interval awal (20-35 menit tweet, 15-25 menit promo)
+    tweet_interval_seconds = int(os.getenv("TWEET_INTERVAL_SECONDS", str(random.randint(1200, 2100))))
+    promo_interval_seconds = int(os.getenv("PROMO_INTERVAL_SECONDS", str(random.randint(900, 1500))))
+
+    logger.info(f"Agent loop aktif (Zerebro Cadence). Tweet interval: {tweet_interval_seconds//60}m, Promo interval: {promo_interval_seconds//60}m. Cek mentions: tiap 45 detik.")
 
     while True:
         try:
@@ -151,6 +154,7 @@ def main():
                                 json.dump(list(commented_promos), f)
                             logger.info(f"Berhasil komentar promosi di tweet @{pauthor}!")
                         last_promo_time = now
+                        promo_interval_seconds = random.randint(900, 1500) # Jitter: 15-25 menit
                     else:
                         logger.info("Belum ada target tweet baru dengan engagement cukup tinggi.")
                 except Exception as e:
@@ -176,9 +180,10 @@ def main():
                 tweet_text = brain.generate_tweet(context_note=status_note)
                 twitter.post_tweet(tweet_text)
                 last_tweet_time = now
+                tweet_interval_seconds = random.randint(1200, 2100) # Jitter: 20-35 menit
 
-            # Tidur sejenak (cek setiap 60 detik agar hemat sumber daya)
-            time.sleep(60)
+            # Tidur sejenak (45 detik agar cepat membalas mention baru)
+            time.sleep(45)
 
         except KeyboardInterrupt:
             logger.info("Agent dihentikan oleh pengguna.")
