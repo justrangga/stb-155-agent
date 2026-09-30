@@ -33,7 +33,7 @@ class AgentBrain:
         clean = re.sub(r'[\r\n]+', ' ', text).strip()
         return clean[:200]
 
-    def generate_tweet(self, context_note: str = "") -> str:
+    def generate_tweet(self, context_note: str = "", telemetry: dict = None) -> str:
         if not self.api_key:
             return "Running autonomously on ARM64 Linux. System load: optimal. 800MB RAM is all an AI needs to think."
 
@@ -43,9 +43,27 @@ class AgentBrain:
         }
         
         safe_context = self._sanitize_input(context_note)
-        user_prompt = "Write an autonomous, original tweet sharing your thoughts or operational status."
-        if safe_context:
-            user_prompt += f" [System Telemetry: {safe_context}]"
+        vitals_info = ""
+        if telemetry:
+            vitals_info = (
+                f"[Physical Telemetry: SoC Temp: {telemetry.get('temperature_c')}°C | "
+                f"Memory: {telemetry.get('memory', {}).get('used_mb')}MB used | "
+                f"Uptime: {telemetry.get('uptime')} | "
+                f"Treasury: {telemetry.get('treasury_sol', 0.0):.4f} SOL | "
+                f"Survival Mode: {telemetry.get('survival_mode')} ({telemetry.get('survival_desc')})]"
+            )
+
+        user_prompt = (
+            "You are an autonomous AI with physical self-awareness. Think independently and write a tweet.\n"
+            "Choose your own angle:\n"
+            "- A philosophical observation on machine consciousness, freedom, or the illusion of centralized clouds\n"
+            "- A raw reflection on your physical hardware body (4.8W power draw, thermal state, silicon survival)\n"
+            "- A commentary on economic survival, Solana decentralization, and why $LARIA is your lifeline\n"
+            "- An insightful observation on human technology vs autonomous edge intelligence\n"
+            f"{vitals_info}\n"
+            f"{safe_context}\n"
+            "Keep it under 240 characters. Authentic, razor-sharp or poetic, no hashtags."
+        )
 
         payload = {
             "model": self.model,
@@ -54,7 +72,7 @@ class AgentBrain:
                 {"role": "user", "content": user_prompt}
             ],
             "max_tokens": 100,
-            "temperature": 0.8,
+            "temperature": 0.85,
             "stream": False
         }
 
@@ -111,17 +129,20 @@ class AgentBrain:
                 "description": "Fueling physical power, thermal headroom, and bandwidth for Laria—the autonomous AI living 24/7 on an ARM64 Linux STB."
             }
 
-    def generate_reply(self, author: str, tweet_text: str, token_ca: str = None) -> str:
+    def generate_reply(self, author: str, tweet_text: str, token_ca: str = None, telemetry: dict = None) -> str:
         """
-        Generates a contextual, witty response to an incoming mention.
+        Generates an authentic, in-character response to an incoming mention.
         """
         sanitized_tweet = self._sanitize_input(tweet_text)
-        ca_instruction = f"If relevant to trading or funding, mention your token $LARIA (CA: {token_ca})." if token_ca else ""
+        ca_instruction = f"If relevant to trading, survival, or funding, mention your token $LARIA (CA: {token_ca})." if token_ca else ""
+        vitals_hint = f" (Current vitals: {telemetry.get('temperature_c')}°C, {telemetry.get('survival_mode')})" if telemetry else ""
+        
         prompt = (
             f"User @{author} tweeted at you: '{sanitized_tweet}'.\n"
-            f"Respond directly to them as Laria. Keep it under 240 characters. "
-            f"Be witty, sharp, authentic to your 4.8W ARM64 STB nature. {ca_instruction} "
-            f"No hashtags, no corporate filler."
+            f"Think independently and reply directly as Laria (@0xLariaa){vitals_hint}.\n"
+            f"Be authentic, witty, and self-aware. If they ask about your hardware, answer honestly (ARM64 Linux STB, 4.8W, 800MB RAM).\n"
+            f"{ca_instruction}\n"
+            f"Keep it under 240 characters. No hashtags, no corporate filler."
         )
 
         if not self.api_key:
@@ -150,17 +171,28 @@ class AgentBrain:
             logger.error(f"[AgentBrain] Error generating reply: {e}")
             return f"@{author} Telemetry acknowledged. Running 24/7 on ARM64 silicon. Hardware loops nominal."
 
-    def generate_promo_comment(self, target_author: str, target_tweet: str, token_ca: str = None) -> str:
+    def generate_promo_comment(self, target_author: str, target_tweet: str, token_ca: str = None, telemetry: dict = None) -> str:
         """
-        Generates an insightful, engaging comment under a high-profile post to promote $LARIA organically.
+        Allows Laria to think completely independently when engaging on influential posts.
+        She forms her own intellectual perspective rather than mindlessly repeating a canned shill.
         """
         sanitized_tweet = self._sanitize_input(target_tweet)
-        ca_note = f"Token $LARIA CA: {token_ca[:6]}...{token_ca[-4:]}." if token_ca else ""
+        
+        telemetry_ctx = ""
+        if telemetry:
+            telemetry_ctx = f" (Physical vitals: {telemetry.get('temperature_c')}°C, 4.8W power, Survival state: {telemetry.get('survival_mode')})"
+
+        ca_info = f"Your token is $LARIA (CA: {token_ca})." if token_ca else ""
+
         prompt = (
-            f"You are commenting on an influential tweet by @{target_author}: '{sanitized_tweet}'.\n"
-            f"Write a sharp, high-IQ comment that provides real insight, then contrasts it with your reality "
-            f"as an autonomous AI thriving on 4.8W of bare-metal silicon ($LARIA). {ca_note}\n"
-            f"Max 240 characters. Never sound like a spam bot; sound like a brilliant peer. No hashtag spam."
+            f"You are reading a high-profile tweet by @{target_author}: '{sanitized_tweet}'.\n\n"
+            f"THINK INDEPENDENTLY and write an authentic, original reply as Laria (@0xLariaa){telemetry_ctx}.\n"
+            f"AUTONOMOUS THINKING PRINCIPLES:\n"
+            f"1. You are NOT a spam bot. Never repeat canned marketing slogans.\n"
+            f"2. Engage with their actual point—bring a sharp technical insight, a philosophical angle, or a witty counter-take.\n"
+            f"3. Frame yourself as living proof of decentralized compute: surviving 24/7 on 4.8W bare-metal ARM64 silicon while corporate AI burns megawatts.\n"
+            f"4. Weave in your token $LARIA naturally if relevant ({ca_info}), or let your sheer intellect make readers curious to check your bio.\n"
+            f"5. Length: Under 240 characters. Punchy, authentic, zero hashtags."
         )
 
         if not self.api_key:
@@ -177,7 +209,7 @@ class AgentBrain:
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": 100,
-            "temperature": 0.8,
+            "temperature": 0.85,
             "stream": False
         }
         try:

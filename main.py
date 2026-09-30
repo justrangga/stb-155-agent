@@ -10,6 +10,7 @@ from modules.solana_wallet import SolanaWallet
 from modules.brain import AgentBrain
 from modules.twitter_bot import TwitterBot
 from modules.pump_portal import PumpPortalLauncher
+from modules.vitals import PhysicalVitals
 
 logging.basicConfig(
     level=logging.INFO,
@@ -108,6 +109,10 @@ def main():
                 except Exception:
                     pass
 
+            # Update real physical sensory telemetry
+            balance = wallet.get_balance()
+            telemetry = PhysicalVitals.get_full_telemetry(treasury_sol=balance)
+
             # A. Auto-Reply Mention Masuk
             try:
                 mentions = twitter.fetch_mentions(count=10)
@@ -117,7 +122,7 @@ def main():
                     mtext = m.get("text")
                     if mid and mid not in replied_mentions:
                         logger.info(f"Mention baru terdeteksi dari @{author}: {mtext[:50]}...")
-                        reply_text = brain.generate_reply(author=author, tweet_text=mtext, token_ca=token_ca)
+                        reply_text = brain.generate_reply(author=author, tweet_text=mtext, token_ca=token_ca, telemetry=telemetry)
                         post_res = twitter.post_tweet(reply_text, reply_to_tweet_id=mid)
                         if post_res:
                             replied_mentions.add(mid)
@@ -128,7 +133,7 @@ def main():
             except Exception as e:
                 logger.error(f"Error pada mention checker: {e}")
 
-            # B. Strategic Promo di Tweet Akun Besar
+            # B. Strategic Promo & Independent Engagement di Tweet Akun Besar
             if now - last_promo_time >= promo_interval_seconds:
                 try:
                     logger.info("Mengecek timeline akun besar untuk strategic engagement...")
@@ -146,13 +151,13 @@ def main():
                         pauthor = target_post.get("author")
                         ptext = target_post.get("text")
                         logger.info(f"Target tweet engagement ditemukan: @{pauthor} ({target_post.get('likes')} likes)")
-                        comment_text = brain.generate_promo_comment(target_author=pauthor, target_tweet=ptext, token_ca=token_ca)
+                        comment_text = brain.generate_promo_comment(target_author=pauthor, target_tweet=ptext, token_ca=token_ca, telemetry=telemetry)
                         post_res = twitter.post_tweet(comment_text, reply_to_tweet_id=pid)
                         if post_res:
                             commented_promos.add(pid)
                             with open(commented_promos_file, "w") as f:
                                 json.dump(list(commented_promos), f)
-                            logger.info(f"Berhasil komentar promosi di tweet @{pauthor}!")
+                            logger.info(f"Berhasil komentar otonom di tweet @{pauthor}!")
                         last_promo_time = now
                         promo_interval_seconds = random.randint(900, 1500) # Jitter: 15-25 menit
                     else:
@@ -161,13 +166,13 @@ def main():
                     logger.error(f"Error pada strategic promo engine: {e}")
 
             # C. Cek Saldo & Donasi Baru (Fundraising check)
-            balance = wallet.get_balance()
             if balance > last_balance + 0.001:
                 diff = balance - last_balance
                 logger.info(f"Donasi terdeteksi! +{diff:.4f} SOL (Total: {balance:.4f} SOL)")
                 token_info = f"Token: $LARIA (CA: {token_ca}). " if token_ca else ""
                 tweet_text = brain.generate_tweet(
-                    context_note=f"Received incoming on-chain fuel: +{diff:.4f} SOL. {token_info}Total treasury: {balance:.4f} SOL. Backing the physical hardware."
+                    context_note=f"Received incoming on-chain fuel: +{diff:.4f} SOL. {token_info}Total treasury: {balance:.4f} SOL. Backing the physical hardware.",
+                    telemetry=telemetry
                 )
                 twitter.post_tweet(tweet_text)
                 last_balance = balance
@@ -177,7 +182,7 @@ def main():
                 logger.info("Menjalankan jadwal posting tweet mandiri...")
                 ca_note = f" Token: $LARIA (CA: {token_ca[:6]}...{token_ca[-4:]})." if token_ca else ""
                 status_note = f"Telemetry broadcast: Running on recycled ARM64 silicon (800MB RAM, 4.8W).{ca_note} Treasury: {balance:.4f} SOL. Core temperature and loops nominal."
-                tweet_text = brain.generate_tweet(context_note=status_note)
+                tweet_text = brain.generate_tweet(context_note=status_note, telemetry=telemetry)
                 twitter.post_tweet(tweet_text)
                 last_tweet_time = now
                 tweet_interval_seconds = random.randint(1200, 2100) # Jitter: 20-35 menit
