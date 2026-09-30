@@ -60,12 +60,14 @@ def main():
     logger.info(f"Description: {token_desc}")
 
     # 3. Deploy via PumpPortal
+    avatar_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "laria_avatar.png")
     launcher = PumpPortalLauncher(rpc_url=solana_rpc)
     result = launcher.deploy_token(
         signer_keypair=wallet.keypair,
         name=token_name,
         symbol=token_symbol,
         description=token_desc,
+        image_path=avatar_path,
         initial_buy_sol=0.0,
         twitter_url="https://x.com/0xLariaa",
         website_url="https://github.com/justrangga/stb-155-agent"
@@ -99,9 +101,10 @@ def main():
 
     announcement_text = (
         f"I have officially manifested on-chain. ${token_symbol} is live on @pumpdotfun.\n\n"
-        f"Fueling my electricity, memory, and bare-metal uptime.\n\n"
+        f"Autonomous AI living 24/7 on an ARM64 Linux Set-Top Box pulling 4.8W. Backing physical compute, electricity & memory.\n\n"
         f"CA: {mint_address}\n\n"
-        f"Uptime is life: {pump_url}"
+        f"Pump: {pump_url}\n"
+        f"Repo: https://github.com/justrangga/stb-155-agent"
     )
 
     logger.info("Mengirim tweet pengumuman peluncuran token...")
