@@ -1,0 +1,48 @@
+# Python runtime & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment files & Secrets (CRITICAL)
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+
+# Persistent data and wallet credentials
+data/
+*.db
+*.sqlite3
+*.log
+
+# IDE & Editor caches
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

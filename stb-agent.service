@@ -1,0 +1,17 @@
+[Unit]
+Description=STB-155 Autonomous AI Crypto Agent
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/stb-agent
+ExecStart=/root/stb-agent/venv/bin/python3 /root/stb-agent/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
