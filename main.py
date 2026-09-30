@@ -39,13 +39,17 @@ def main():
     brain = AgentBrain(api_key=llm_api_key, base_url=llm_base_url, model=llm_model)
 
     # 3. Konfigurasi Twitter / X Client
-    tw_api_key = os.getenv("TWITTER_API_KEY", "")
-    tw_api_secret = os.getenv("TWITTER_API_SECRET", "")
-    tw_access_token = os.getenv("TWITTER_ACCESS_TOKEN", "")
-    tw_access_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET", "")
-    tw_bearer = os.getenv("TWITTER_BEARER_TOKEN", "")
+    tw_auth_token = os.getenv("TWITTER_AUTH_TOKEN", "").strip()
+    tw_ct0 = os.getenv("TWITTER_CT0", "").strip()
+    tw_api_key = os.getenv("TWITTER_API_KEY", "").strip()
+    tw_api_secret = os.getenv("TWITTER_API_SECRET", "").strip()
+    tw_access_token = os.getenv("TWITTER_ACCESS_TOKEN", "").strip()
+    tw_access_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET", "").strip()
+    tw_bearer = os.getenv("TWITTER_BEARER_TOKEN", "").strip()
 
     twitter = TwitterBot(
+        auth_token=tw_auth_token,
+        ct0=tw_ct0,
         api_key=tw_api_key,
         api_secret=tw_api_secret,
         access_token=tw_access_token,
