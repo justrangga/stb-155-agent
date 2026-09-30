@@ -57,8 +57,9 @@ def main():
         bearer_token=tw_bearer
     )
 
-    # 4. Token Launcher
+    # 4. Token Launcher & State
     launcher = PumpPortalLauncher(rpc_url=solana_rpc)
+    launched_token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "launched_token.json")
 
     # State tracking
     last_balance = current_balance
@@ -71,13 +72,23 @@ def main():
         try:
             now = time.time()
 
+            # Load latest token state if available
+            token_ca = None
+            if os.path.exists(launched_token_file):
+                try:
+                    with open(launched_token_file, "r") as f:
+                        token_ca = json.load(f).get("mint_address")
+                except Exception:
+                    pass
+
             # A. Cek Saldo & Donasi Baru (Fundraising check)
             balance = wallet.get_balance()
             if balance > last_balance + 0.001:
                 diff = balance - last_balance
                 logger.info(f"Donasi terdeteksi! +{diff:.4f} SOL (Total: {balance:.4f} SOL)")
+                token_info = f"Token: $LARIA (CA: {token_ca}). " if token_ca else ""
                 tweet_text = brain.generate_tweet(
-                    context_note=f"Received incoming on-chain fuel: +{diff:.4f} SOL. Total treasury: {balance:.4f} SOL. Backing the physical hardware."
+                    context_note=f"Received incoming on-chain fuel: +{diff:.4f} SOL. {token_info}Total treasury: {balance:.4f} SOL. Backing the physical hardware."
                 )
                 twitter.post_tweet(tweet_text)
                 last_balance = balance
@@ -85,7 +96,8 @@ def main():
             # B. Jadwal Tweet Mandiri
             if now - last_tweet_time >= tweet_interval_seconds:
                 logger.info("Menjalankan jadwal posting tweet mandiri...")
-                status_note = f"Telemetry broadcast: Running on recycled ARM64 silicon (800MB RAM, 4.8W). Treasury: {balance:.4f} SOL. Core temperature and loops nominal."
+                ca_note = f" Token: $LARIA (CA: {token_ca[:6]}...{token_ca[-4:]})." if token_ca else ""
+                status_note = f"Telemetry broadcast: Running on recycled ARM64 silicon (800MB RAM, 4.8W).{ca_note} Treasury: {balance:.4f} SOL. Core temperature and loops nominal."
                 tweet_text = brain.generate_tweet(context_note=status_note)
                 twitter.post_tweet(tweet_text)
                 last_tweet_time = now
