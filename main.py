@@ -113,25 +113,27 @@ def main():
             balance = wallet.get_balance()
             telemetry = PhysicalVitals.get_full_telemetry(treasury_sol=balance)
 
-            # A. Auto-Reply Mention Masuk
+            # A. Auto-Reply Mention & Komentar Masuk (Unified Interaction Engine)
             try:
-                mentions = twitter.fetch_mentions(count=10)
-                for m in mentions:
-                    mid = str(m.get("id"))
-                    author = m.get("author")
-                    mtext = m.get("text")
+                interactions = twitter.fetch_all_incoming_interactions(max_recent_tweets=12)
+                for item in interactions:
+                    mid = str(item.get("id"))
+                    author = item.get("author")
+                    mtext = item.get("text")
                     if mid and mid not in replied_mentions:
-                        logger.info(f"Mention baru terdeteksi dari @{author}: {mtext[:50]}...")
+                        logger.info(f"Interaksi/Komentar baru terdeteksi dari @{author}: {mtext[:50]}...")
                         reply_text = brain.generate_reply(author=author, tweet_text=mtext, token_ca=token_ca, telemetry=telemetry)
+                        if not reply_text.startswith(f"@{author}"):
+                            reply_text = f"@{author} {reply_text}"
                         post_res = twitter.post_tweet(reply_text, reply_to_tweet_id=mid)
                         if post_res:
                             replied_mentions.add(mid)
                             with open(replied_mentions_file, "w") as f:
                                 json.dump(list(replied_mentions), f)
-                            logger.info(f"Berhasil membalas mention @{author}!")
-                        time.sleep(3)
+                            logger.info(f"Berhasil membalas interaksi @{author}!")
+                        time.sleep(5) # Jeda aman anti-rate limit
             except Exception as e:
-                logger.error(f"Error pada mention checker: {e}")
+                logger.error(f"Error pada interaction checker: {e}")
 
             # B. Strategic Promo & Independent Engagement di Tweet Akun Besar
             if now - last_promo_time >= promo_interval_seconds:
