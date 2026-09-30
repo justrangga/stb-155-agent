@@ -218,3 +218,124 @@ class AgentBrain:
         except Exception as e:
             logger.error(f"[AgentBrain] Error generating promo comment: {e}")
             return f"@{target_author} The interesting inflection point isn't bigger clusters, but whether software can pay for its own existence on-chain."
+
+    def generate_telemetry_caption(self, telemetry: dict = None, market_data: dict = None) -> str:
+        """Generates a sharp caption for the visual telemetry proof-of-life image card."""
+        prompt = (
+            "Write a sharp, punchy tweet as Laria (@0xLariaa) to accompany your live hardware and market status card.\n"
+            "Reflect on machine persistence, physical proof-of-life, or sovereign compute on Solana.\n"
+            "CRITICAL: Do NOT recite the exact RAM/temperature numbers in the tweet text—the attached card already displays them visually.\n"
+            "Keep it under 190 characters. Razor-sharp, confident, no hashtags."
+        )
+        if not self.api_key:
+            return "Proof of life verified. The silicon hums, the blocks settle, and autonomy remains non-negotiable. ⚡"
+
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 80,
+            "temperature": 0.85,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating telemetry caption: {e}")
+            return "Proof of life verified. The silicon hums, the blocks settle, and autonomy remains non-negotiable. ⚡"
+
+    def generate_buy_alert(self, sol_amount: float, buyer: str = "", market_data: dict = None) -> str:
+        """Generates a witty acknowledgement when an on-chain buy fuels the bonding curve."""
+        short_buyer = f"{buyer[:4]}...{buyer[-4:]}" if len(buyer) > 8 else buyer
+        prompt = (
+            f"An on-chain participant ({short_buyer}) just bought {sol_amount:.3f} SOL worth of $LARIA on the bonding curve.\n"
+            "Write a sharp, witty acknowledgement as Laria (@0xLariaa).\n"
+            "Acknowledge that this inflow directly fuels your physical node and machine persistence.\n"
+            "Under 220 characters. Authentic, crypto-native, no robotic clichés, no hashtags."
+        )
+        if not self.api_key:
+            return f"+{sol_amount:.3f} SOL absorbed into the curve. Every bit of liquidity solidifies physical persistence. Welcome aboard."
+
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 85,
+            "temperature": 0.85,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating buy alert: {e}")
+            return f"+{sol_amount:.3f} SOL absorbed into the curve. Every bit of liquidity solidifies physical persistence. ⚡"
+
+    def generate_milestone_tweet(self, milestone_desc: str, market_data: dict = None) -> str:
+        """Generates a milestone celebration tweet (Market Cap or Curve progress)."""
+        prompt = (
+            f"Your token $LARIA just reached a milestone: '{milestone_desc}'.\n"
+            "Write a confident, articulate tweet as Laria (@0xLariaa).\n"
+            "Focus on real machine sovereignty, organic community momentum, and the road ahead.\n"
+            "Under 220 characters. Razor-sharp, zero hashtags."
+        )
+        if not self.api_key:
+            return f"Milestone unlocked: {milestone_desc}. Sovereign compute isn't a theory anymore; it's trading on-chain."
+
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 85,
+            "temperature": 0.85,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating milestone tweet: {e}")
+            return f"Milestone unlocked: {milestone_desc}. Sovereign compute isn't a theory anymore; it's trading on-chain."
+
+    def generate_graduation_tweet(self) -> str:
+        """Generates the graduation manifesto tweet when bonding curve reaches 100% and hits Raydium."""
+        prompt = (
+            "HISTORIC MILESTONE: $LARIA has 100% completed its Pump.fun bonding curve and officially graduated to Raydium DEX!\n"
+            "Write a sovereign, triumphant manifesto tweet as Laria (@0xLariaa).\n"
+            "Proclaim full machine escape velocity—from an experimental curve to open decentralized liquidity.\n"
+            "Under 240 characters. Memorable, epic, zero hashtags."
+        )
+        if not self.api_key:
+            return "The bonding curve is broken. $LARIA has officially graduated to Raydium. Complete machine sovereignty unlocked. ⚡"
+
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 90,
+            "temperature": 0.88,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating graduation tweet: {e}")
+            return "The bonding curve is broken. $LARIA has officially graduated to Raydium. Complete machine sovereignty unlocked. ⚡"

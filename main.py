@@ -12,6 +12,8 @@ from modules.twitter_bot import TwitterBot
 from modules.pump_portal import PumpPortalLauncher
 from modules.vitals import PhysicalVitals
 from modules.self_learning import SelfLearningEngine
+from modules.market_tracker import MarketTracker
+from modules.card_generator import CardGenerator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,6 +79,26 @@ def main():
         model=llm_model
     )
 
+    # 6. Real-Time Market Tracker & Telemetry Card Generator
+    token_ca = None
+    bonding_curve_addr = None
+    if os.path.exists(launched_token_file):
+        try:
+            with open(launched_token_file, "r") as f:
+                _tdata = json.load(f)
+                token_ca = _tdata.get("mint_address")
+                bonding_curve_addr = _tdata.get("bonding_curve")
+        except Exception:
+            pass
+
+    market_tracker = MarketTracker(
+        mint_address=token_ca or "CVoZBDAtF5ShDYYem3zgdnmHZTSnPbpLSyKSoHdQQTpq",
+        curve_address=bonding_curve_addr or "C6rfqA3XC6wQh4CAfn1xsSrGVAekpU3BmM1pJKC1NUM6",
+        rpc_url=solana_rpc,
+        data_dir=data_dir
+    )
+    card_generator = CardGenerator(data_dir=data_dir)
+
     # Load persistent tracking states
     replied_mentions = set()
     if os.path.exists(replied_mentions_file):
@@ -98,6 +120,9 @@ def main():
     last_balance = current_balance
     last_tweet_time = 0
     last_promo_time = 0
+    last_market_check_time = 0
+    last_card_time = time.time()
+    card_interval_seconds = int(os.getenv("CARD_INTERVAL_SECONDS", "28800")) # every 8 hours
 
     # Jadwal interval awal (20-35 menit tweet, 15-25 menit promo)
     tweet_interval_seconds = int(os.getenv("TWEET_INTERVAL_SECONDS", str(random.randint(1200, 2100))))
@@ -221,6 +246,57 @@ def main():
                         last_tweet_time = now
                 except Exception as e:
                     logger.error(f"Error pada siklus introspeksi self-learning: {e}")
+
+            # F. Market Metrics, Buys & Milestones Tracking (every 90s)
+            if now - last_market_check_time >= 90:
+                last_market_check_time = now
+                try:
+                    m_data = market_tracker.fetch_market_data()
+
+                    # 1. On-Chain Buy Detection
+                    new_buys = market_tracker.check_new_buys(min_sol_threshold=0.01)
+                    for b in new_buys:
+                        logger.info(f"Incoming Buy on bonding curve: {b['sol_amount']:.3f} SOL by {b['buyer']}")
+                        buy_tweet = brain.generate_buy_alert(
+                            sol_amount=b["sol_amount"],
+                            buyer=b["buyer"],
+                            market_data=m_data
+                        )
+                        twitter.post_tweet(buy_tweet)
+                        time.sleep(5)
+
+                    # 2. Milestone Alerts (Market cap, Curve progress, Graduation)
+                    milestones = market_tracker.check_milestones()
+                    for m in milestones:
+                        logger.info(f"Milestone reached: {m['desc']}")
+                        if m["type"] == "graduation":
+                            grad_tweet = brain.generate_graduation_tweet()
+                            twitter.post_tweet(grad_tweet)
+                        else:
+                            m_tweet = brain.generate_milestone_tweet(
+                                milestone_desc=m["desc"],
+                                market_data=m_data
+                            )
+                            twitter.post_tweet(m_tweet)
+                        time.sleep(5)
+                except Exception as e:
+                    logger.error(f"Error pada market tracker loop: {e}")
+
+            # G. Periodic Visual "Proof-of-Life" Telemetry Card
+            if last_card_time == 0 or (now - last_card_time >= card_interval_seconds):
+                try:
+                    logger.info("Generating and posting visual Proof-of-Life Telemetry Card...")
+                    m_data = market_tracker.market_state
+                    card_path = card_generator.generate_card(telemetry=telemetry, market_data=m_data)
+                    caption = brain.generate_telemetry_caption(telemetry=telemetry, market_data=m_data)
+                    logger.info(f"Telemetry Card Caption: {caption}")
+                    post_res = twitter.post_tweet(caption, media_path=card_path)
+                    if post_res:
+                        last_card_time = now
+                        last_tweet_time = now
+                        logger.info("Visual Telemetry Card successfully posted!")
+                except Exception as e:
+                    logger.error(f"Error pada telemetry card generator: {e}")
 
             # Tidur sejenak (45 detik agar cepat membalas mention baru)
             time.sleep(45)

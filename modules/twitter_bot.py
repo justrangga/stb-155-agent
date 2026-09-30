@@ -60,13 +60,17 @@ class TwitterBot:
             await self.twikit_client.client_transaction.init(CffiSessionAdapter(), {})
             logger.info("[TwitterBot] Dynamic Transaction Engine siap.")
 
-    def post_tweet(self, text: str, reply_to_tweet_id: str = None):
+    def post_tweet(self, text: str, reply_to_tweet_id: str = None, media_path: str = None):
         if self.mode == "disabled":
-            print(f"[TwitterBot DRY-RUN] Would tweet (reply_to={reply_to_tweet_id}):\n>>> {text}")
+            print(f"[TwitterBot DRY-RUN] Would tweet (reply_to={reply_to_tweet_id}, media={media_path}):\n>>> {text}")
             return "dry-run-id"
 
         if self.mode == "api":
             try:
+                media_ids = None
+                if media_path and os.path.exists(media_path):
+                    # Tweepy v1.1 upload if available
+                    pass
                 res = self.tweepy_client.create_tweet(text=text, in_reply_to_tweet_id=reply_to_tweet_id)
                 tweet_id = res.data.get("id")
                 print(f"[TwitterBot] Tweet berhasil diposting via API! ID: {tweet_id}")
@@ -78,16 +82,27 @@ class TwitterBot:
         if self.mode == "cookie":
             import asyncio
             try:
-                return asyncio.run(self._post_tweet_cookie(text, reply_to_tweet_id=reply_to_tweet_id))
+                return asyncio.run(self._post_tweet_cookie(text, reply_to_tweet_id=reply_to_tweet_id, media_path=media_path))
             except Exception as e:
                 logger.error(f"[TwitterBot] Error pada posting cookie: {e}")
                 return None
 
-    async def _post_tweet_cookie(self, text: str, reply_to_tweet_id: str = None):
+    async def _post_tweet_cookie(self, text: str, reply_to_tweet_id: str = None, media_path: str = None):
         await self._ensure_transaction_engine()
         
         path = "/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet"
         tid = self.twikit_client.client_transaction.generate_transaction_id(method="POST", path=path)
+
+        media_entities = []
+        if media_path and os.path.exists(media_path):
+            try:
+                self.twikit_client.set_cookies(self.cookies)
+                media_id = await self.twikit_client.upload_media(media_path)
+                if media_id:
+                    media_entities.append({"media_id": str(media_id), "tagged_users": []})
+                    logger.info(f"[TwitterBot] Media uploaded successfully: {media_id}")
+            except Exception as e:
+                logger.error(f"[TwitterBot] Media upload failed: {e}")
 
         headers = {
             "authorization": f"Bearer {PUBLIC_WEB_BEARER}",
@@ -103,7 +118,7 @@ class TwitterBot:
             "tweet_text": text,
             "dark_request": False,
             "media": {
-                "media_entities": [],
+                "media_entities": media_entities,
                 "possibly_sensitive": False
             },
             "semantic_annotation_ids": []

@@ -52,10 +52,12 @@ Running an autonomous agent with blockchain and social network capabilities intr
 │   ├── brain.py            # LLM prompt orchestration, persona & anti-injection guardrails
 │   ├── self_learning.py    # Cognitive introspection, engagement tracking & self-learning
 │   ├── vitals.py           # Physical SoC hardware telemetry & survival instinct evaluator
+│   ├── market_tracker.py   # DexScreener pricing, on-chain buy monitor & Raydium graduation detector
+│   ├── card_generator.py   # Visual 1200x675 proof-of-life telemetry status card renderer
 │   ├── pump_callout.py     # Non-custodial cryptographic thesis callout on Pump.fun
 │   ├── pump_portal.py      # Programmatic Pump.fun / PumpPortal token deployment
 │   ├── solana_wallet.py    # Local Solana keypair manager & RPC balance monitor
-│   └── twitter_bot.py      # GraphQL / Web Cookie Twitter driver with bypass engine
+│   └── twitter_bot.py      # GraphQL / Web Cookie Twitter driver with media upload support
 ├── data/                   # (Ignored by Git) Local wallet, reflections & state storage
 ├── .env.example            # Environment configuration template
 ├── main.py                 # Core event loop, Zerebro cadence & self-learning scheduler
