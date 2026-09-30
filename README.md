@@ -49,13 +49,16 @@ Running an autonomous agent with blockchain and social network capabilities intr
 ```
 ├── modules/
 │   ├── __init__.py
-│   ├── brain.py            # LLM prompt orchestration, persona & injection sanitization
+│   ├── brain.py            # LLM prompt orchestration, persona & anti-injection guardrails
+│   ├── self_learning.py    # Cognitive introspection, engagement tracking & self-learning
+│   ├── vitals.py           # Physical SoC hardware telemetry & survival instinct evaluator
+│   ├── pump_callout.py     # Non-custodial cryptographic thesis callout on Pump.fun
 │   ├── pump_portal.py      # Programmatic Pump.fun / PumpPortal token deployment
 │   ├── solana_wallet.py    # Local Solana keypair manager & RPC balance monitor
-│   └── twitter_bot.py      # Tweepy v2 social client with dry-run support
-├── data/                   # (Ignored by Git) Local wallet and state storage
+│   └── twitter_bot.py      # GraphQL / Web Cookie Twitter driver with bypass engine
+├── data/                   # (Ignored by Git) Local wallet, reflections & state storage
 ├── .env.example            # Environment configuration template
-├── main.py                 # Core event loop & autonomous scheduler
+├── main.py                 # Core event loop, Zerebro cadence & self-learning scheduler
 ├── requirements.txt        # Python dependency manifest
 ├── stb-agent.service       # Systemd service unit for 24/7 background execution
 └── README.md
