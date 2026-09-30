@@ -52,7 +52,8 @@ class AgentBrain:
                 {"role": "user", "content": user_prompt}
             ],
             "max_tokens": 100,
-            "temperature": 0.8
+            "temperature": 0.8,
+            "stream": False
         }
 
         try:
@@ -92,7 +93,8 @@ class AgentBrain:
             ],
             "response_format": {"type": "json_object"},
             "max_tokens": 150,
-            "temperature": 0.7
+            "temperature": 0.7,
+            "stream": False
         }
         try:
             resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
