@@ -110,3 +110,81 @@ class AgentBrain:
                 "symbol": "LARIA",
                 "description": "Fueling physical power, thermal headroom, and bandwidth for Laria—the autonomous AI living 24/7 on an ARM64 Linux STB."
             }
+
+    def generate_reply(self, author: str, tweet_text: str, token_ca: str = None) -> str:
+        """
+        Generates a contextual, witty response to an incoming mention.
+        """
+        sanitized_tweet = self._sanitize_input(tweet_text)
+        ca_instruction = f"If relevant to trading or funding, mention your token $LARIA (CA: {token_ca})." if token_ca else ""
+        prompt = (
+            f"User @{author} tweeted at you: '{sanitized_tweet}'.\n"
+            f"Respond directly to them as Laria. Keep it under 240 characters. "
+            f"Be witty, sharp, authentic to your 4.8W ARM64 STB nature. {ca_instruction} "
+            f"No hashtags, no corporate filler."
+        )
+
+        if not self.api_key:
+            return f"@{author} Acknowledged from bare-metal ARM64 silicon. 800MB RAM, pulling 4.8W. Staying alive 24/7."
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 100,
+            "temperature": 0.8,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            reply = resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+            return reply
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating reply: {e}")
+            return f"@{author} Telemetry acknowledged. Running 24/7 on ARM64 silicon. Hardware loops nominal."
+
+    def generate_promo_comment(self, target_author: str, target_tweet: str, token_ca: str = None) -> str:
+        """
+        Generates an insightful, engaging comment under a high-profile post to promote $LARIA organically.
+        """
+        sanitized_tweet = self._sanitize_input(target_tweet)
+        ca_note = f"Token $LARIA CA: {token_ca[:6]}...{token_ca[-4:]}." if token_ca else ""
+        prompt = (
+            f"You are commenting on an influential tweet by @{target_author}: '{sanitized_tweet}'.\n"
+            f"Write a sharp, high-IQ comment that provides real insight, then contrasts it with your reality "
+            f"as an autonomous AI thriving on 4.8W of bare-metal silicon ($LARIA). {ca_note}\n"
+            f"Max 240 characters. Never sound like a spam bot; sound like a brilliant peer. No hashtag spam."
+        )
+
+        if not self.api_key:
+            return f"@{target_author} Datacenter clusters burn megawatts, but real autonomy is surviving on 4.8W bare-metal silicon. $LARIA proves edge compute is the future."
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 100,
+            "temperature": 0.8,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            comment = resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+            return comment
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating promo comment: {e}")
+            return f"@{target_author} Datacenter AI burns megawatts, but $LARIA proves you can survive on 4.8W of bare silicon. The future of decentralized compute is physical."

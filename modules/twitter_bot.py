@@ -144,3 +144,96 @@ class TwitterBot:
         else:
             logger.error(f"[TwitterBot] Posting gagal, Status {resp.status_code}: {resp.text[:300]}")
             return None
+
+    def fetch_mentions(self, count: int = 15) -> list:
+        """
+        Fetches incoming mentions via the Twitter REST notifications endpoint.
+        Returns a list of dicts: [{"id": "...", "author": "...", "text": "..."}]
+        """
+        if self.mode != "cookie":
+            return []
+
+        url = f"https://x.com/i/api/2/notifications/mentions.json?count={count}"
+        headers = {
+            "authorization": f"Bearer {PUBLIC_WEB_BEARER}",
+            "x-csrf-token": self.ct0,
+            "x-twitter-active-user": "yes",
+            "x-twitter-auth-type": "OAuth2Session",
+            "referer": "https://x.com/notifications/mentions"
+        }
+
+        try:
+            resp = cffi_requests.get(url, headers=headers, cookies=self.cookies, impersonate="chrome124", timeout=20)
+            if resp.status_code != 200:
+                logger.error(f"[TwitterBot] Fetch mentions status {resp.status_code}")
+                return []
+            
+            data = resp.json()
+            tweets = data.get("globalObjects", {}).get("tweets", {})
+            users = data.get("globalObjects", {}).get("users", {})
+
+            results = []
+            for tid, tw in tweets.items():
+                uid = tw.get("user_id_str")
+                author = users.get(uid, {}).get("screen_name", "")
+                if author.lower() == "0xlariaa":
+                    continue
+                text = tw.get("full_text") or tw.get("text") or ""
+                results.append({
+                    "id": tid,
+                    "author": author,
+                    "text": text
+                })
+            return results
+        except Exception as e:
+            logger.error(f"[TwitterBot] Error fetching mentions: {e}")
+            return []
+
+    def fetch_feed_tweets(self, count: int = 30) -> list:
+        """
+        Fetches live tweets from the home feed to find high-engagement posts for strategic commenting.
+        Returns a list of dicts: [{"id": "...", "author": "...", "text": "...", "likes": ...}]
+        """
+        if self.mode != "cookie":
+            return []
+
+        url = f"https://x.com/i/api/2/timeline/home.json?count={count}"
+        headers = {
+            "authorization": f"Bearer {PUBLIC_WEB_BEARER}",
+            "x-csrf-token": self.ct0,
+            "x-twitter-active-user": "yes",
+            "x-twitter-auth-type": "OAuth2Session",
+            "referer": "https://x.com/home"
+        }
+
+        try:
+            resp = cffi_requests.get(url, headers=headers, cookies=self.cookies, impersonate="chrome124", timeout=20)
+            if resp.status_code != 200:
+                logger.error(f"[TwitterBot] Fetch feed status {resp.status_code}")
+                return []
+
+            data = resp.json()
+            tweets = data.get("globalObjects", {}).get("tweets", {})
+            users = data.get("globalObjects", {}).get("users", {})
+
+            results = []
+            for tid, tw in tweets.items():
+                uid = tw.get("user_id_str")
+                author = users.get(uid, {}).get("screen_name", "")
+                if author.lower() == "0xlariaa":
+                    continue
+                likes = tw.get("favorite_count", 0)
+                text = tw.get("full_text") or tw.get("text") or ""
+                results.append({
+                    "id": tid,
+                    "author": author,
+                    "text": text,
+                    "likes": likes
+                })
+
+            # Sort by likes descending so high-profile posts come first
+            results.sort(key=lambda x: x["likes"], reverse=True)
+            return results
+        except Exception as e:
+            logger.error(f"[TwitterBot] Error fetching feed tweets: {e}")
+            return []
