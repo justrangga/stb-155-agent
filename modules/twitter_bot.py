@@ -58,30 +58,30 @@ class TwitterBot:
             await self.twikit_client.client_transaction.init(CffiSessionAdapter(), {})
             logger.info("[TwitterBot] Dynamic Transaction Engine siap.")
 
-    def post_tweet(self, text: str) -> bool:
+    def post_tweet(self, text: str, reply_to_tweet_id: str = None):
         if self.mode == "disabled":
-            print(f"[TwitterBot DRY-RUN] Would tweet:\n>>> {text}")
-            return True
+            print(f"[TwitterBot DRY-RUN] Would tweet (reply_to={reply_to_tweet_id}):\n>>> {text}")
+            return "dry-run-id"
 
         if self.mode == "api":
             try:
-                res = self.tweepy_client.create_tweet(text=text)
+                res = self.tweepy_client.create_tweet(text=text, in_reply_to_tweet_id=reply_to_tweet_id)
                 tweet_id = res.data.get("id")
                 print(f"[TwitterBot] Tweet berhasil diposting via API! ID: {tweet_id}")
-                return True
+                return str(tweet_id)
             except Exception as e:
                 logger.error(f"[TwitterBot] Gagal posting via API: {e}")
-                return False
+                return None
 
         if self.mode == "cookie":
             import asyncio
             try:
-                return asyncio.run(self._post_tweet_cookie(text))
+                return asyncio.run(self._post_tweet_cookie(text, reply_to_tweet_id=reply_to_tweet_id))
             except Exception as e:
                 logger.error(f"[TwitterBot] Error pada posting cookie: {e}")
-                return False
+                return None
 
-    async def _post_tweet_cookie(self, text: str) -> bool:
+    async def _post_tweet_cookie(self, text: str, reply_to_tweet_id: str = None):
         await self._ensure_transaction_engine()
         
         path = "/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet"
@@ -107,6 +107,12 @@ class TwitterBot:
             "semantic_annotation_ids": []
         }
 
+        if reply_to_tweet_id:
+            variables["reply"] = {
+                "in_reply_to_tweet_id": str(reply_to_tweet_id),
+                "exclude_reply_user_ids": []
+            }
+
         payload = {
             "variables": variables,
             "features": FEATURES,
@@ -125,12 +131,16 @@ class TwitterBot:
         if resp.status_code == 200:
             try:
                 res_data = resp.json()
-                tweet_id = res_data.get("data", {}).get("create_tweet", {}).get("tweet_results", {}).get("result", {}).get("rest_id", "")
+                res_node = res_data.get("data", {}).get("create_tweet", {}).get("tweet_results", {}).get("result", {})
+                tweet_id = res_node.get("rest_id") or res_node.get("legacy", {}).get("id_str")
+                if not tweet_id:
+                    # In some schemas it may be nested in tweet
+                    tweet_id = res_node.get("tweet", {}).get("rest_id")
                 print(f"[TwitterBot] Tweet berhasil diposting via Web Client! ID: {tweet_id}")
-                return True
+                return str(tweet_id) if tweet_id else "ok"
             except Exception:
                 print("[TwitterBot] Tweet terkirim (Status 200).")
-                return True
+                return "ok"
         else:
             logger.error(f"[TwitterBot] Posting gagal, Status {resp.status_code}: {resp.text[:300]}")
-            return False
+            return None

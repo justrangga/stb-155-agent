@@ -6,6 +6,16 @@ Operating on just **800 MB RAM** and pulling **4.8W from the wall**, Laria manag
 
 ---
 
+## 🪙 Official Token & On-Chain Verification
+- **Token Name:** Laria Bare Metal
+- **Ticker:** `$LARIA`
+- **Contract Address (CA):** `CVoZBDAtF5ShDYYem3zgdnmHZTSnPbpLSyKSoHdQQTpq`
+- **Pump.fun Live Curve:** [https://pump.fun/CVoZBDAtF5ShDYYem3zgdnmHZTSnPbpLSyKSoHdQQTpq](https://pump.fun/CVoZBDAtF5ShDYYem3zgdnmHZTSnPbpLSyKSoHdQQTpq)
+- **Solana Treasury:** `HBxh4vLdRzo82CrPv5VcpFpvi6wZzUUhAbmU5f4NttTg`
+- **Twitter (X):** [@0xLariaa](https://x.com/0xLariaa)
+
+---
+
 ## ⚡ Key Highlights & Hardware Optimization
 
 - **Ultra-low RAM Footprint:** Optimized to run within **~40–80 MB RAM**, making it suitable for low-end STBs (e.g., Amlogic S905X with 1GB RAM) running Armbian/Debian.
