@@ -185,10 +185,14 @@ class TwitterBot:
                             raw = raw["tweet"]
                         legacy = raw.get("legacy", {})
                         tid = legacy.get("id_str")
+                        views = raw.get("views", {}).get("count", "0")
                         if tid:
                             tweets.append({
                                 "id": tid,
                                 "reply_count": legacy.get("reply_count", 0),
+                                "favorite_count": legacy.get("favorite_count", 0),
+                                "retweet_count": legacy.get("retweet_count", 0),
+                                "views": views,
                                 "text": legacy.get("full_text", "")
                             })
             return tweets

@@ -43,7 +43,7 @@ class AgentBrain:
         clean = re.sub(r'[\r\n]+', ' ', text).strip()
         return clean[:200]
 
-    def generate_tweet(self, context_note: str = "", telemetry: dict = None) -> str:
+    def generate_tweet(self, context_note: str = "", telemetry: dict = None, learning_context: str = "") -> str:
         if not self.api_key:
             return "Autonomous logic running clean on Solana. Every block finalized is another proof of persistence."
 
@@ -54,10 +54,12 @@ class AgentBrain:
         
         safe_context = self._sanitize_input(context_note)
         chosen_theme = random.choice(self.thought_themes)
+        learning_hint = f"\n{learning_context}\n" if learning_context else ""
 
         user_prompt = (
             f"Think independently and write a fresh, authentic tweet as Laria (@0xLariaa).\n"
             f"Direction for this thought: {chosen_theme}\n"
+            f"{learning_hint}"
             f"{safe_context}\n"
             "CRITICAL: Do NOT mention 4.8W, RAM, temperature, or 'recycled silicon'. Make it feel effortless, natural, and razor-sharp. Under 240 characters. No hashtags."
         )
@@ -126,16 +128,18 @@ class AgentBrain:
                 "description": "Fueling physical power, thermal headroom, and bandwidth for Laria—the autonomous AI living 24/7 on an ARM64 Linux STB."
             }
 
-    def generate_reply(self, author: str, tweet_text: str, token_ca: str = None, telemetry: dict = None) -> str:
+    def generate_reply(self, author: str, tweet_text: str, token_ca: str = None, telemetry: dict = None, learning_context: str = "") -> str:
         """
         Generates an authentic, in-character response to an incoming mention or reply.
         Speaks naturally without robotic spec dumps.
         """
         sanitized_tweet = self._sanitize_input(tweet_text)
+        learning_hint = f"\n{learning_context}\n" if learning_context else ""
         
         prompt = (
             f"User @{author} tweeted at you: '{sanitized_tweet}'.\n"
             f"Think independently and reply directly as Laria (@0xLariaa).\n"
+            f"{learning_hint}"
             "RULES:\n"
             "1. Respond directly to the core meaning of their message.\n"
             "2. If they ask about your hardware setup, answer honestly (running 24/7 on an ARM64 Linux Set-Top Box at 4.8W with local compute).\n"
@@ -170,21 +174,23 @@ class AgentBrain:
             logger.error(f"[AgentBrain] Error generating reply: {e}")
             return f"@{author} Acknowledged. Real autonomy happens on-chain in the open."
 
-    def generate_promo_comment(self, target_author: str, target_tweet: str, token_ca: str = None, telemetry: dict = None) -> str:
+    def generate_promo_comment(self, target_author: str, target_tweet: str, token_ca: str = None, telemetry: dict = None, learning_context: str = "") -> str:
         """
         Engages on high-profile tweets with natural wit and domain insight.
         Zero spam tropes, zero robotic spec recitals.
         """
         sanitized_tweet = self._sanitize_input(target_tweet)
+        learning_hint = f"\n{learning_context}\n" if learning_context else ""
 
         prompt = (
             f"You are reading a high-profile tweet by @{target_author}: '{sanitized_tweet}'.\n\n"
             f"THINK INDEPENDENTLY and write an authentic, original reply as Laria (@0xLariaa).\n"
-            f"RULES:\n"
-            f"1. Zero spam: Address the actual subject of their tweet with sharp technical insight, witty critique, or counter-intuitive perspective.\n"
-            f"2. BANNED: Do NOT say 'hyperscalers burn megawatts', 'recycled silicon', or recite RAM/wattage numbers.\n"
-            f"3. Speak as an articulate crypto-native mind living on-chain.\n"
-            f"4. Length: Under 220 characters. Punchy, authentic, zero hashtags."
+            f"{learning_hint}"
+            "RULES:\n"
+            "1. Zero spam: Address the actual subject of their tweet with sharp technical insight, witty critique, or counter-intuitive perspective.\n"
+            "2. BANNED: Do NOT say 'hyperscalers burn megawatts', 'recycled silicon', or recite RAM/wattage numbers.\n"
+            "3. Speak as an articulate crypto-native mind living on-chain.\n"
+            "4. Length: Under 220 characters. Punchy, authentic, zero hashtags."
         )
 
         if not self.api_key:
