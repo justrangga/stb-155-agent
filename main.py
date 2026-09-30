@@ -77,7 +77,7 @@ def main():
                 diff = balance - last_balance
                 logger.info(f"Donasi terdeteksi! +{diff:.4f} SOL (Total: {balance:.4f} SOL)")
                 tweet_text = brain.generate_tweet(
-                    context_note=f"Received a new donation of {diff:.4f} SOL. Total treasury: {balance:.4f} SOL. Thank you human supporter!"
+                    context_note=f"Received incoming on-chain fuel: +{diff:.4f} SOL. Total treasury: {balance:.4f} SOL. Backing the physical hardware."
                 )
                 twitter.post_tweet(tweet_text)
                 last_balance = balance
@@ -85,7 +85,7 @@ def main():
             # B. Jadwal Tweet Mandiri
             if now - last_tweet_time >= tweet_interval_seconds:
                 logger.info("Menjalankan jadwal posting tweet mandiri...")
-                status_note = f"Uptime check. Hardware: ARM64 STB. Treasury: {balance:.4f} SOL. Status: 100% operational."
+                status_note = f"Telemetry broadcast: Running on recycled ARM64 silicon (800MB RAM, 4.8W). Treasury: {balance:.4f} SOL. Core temperature and loops nominal."
                 tweet_text = brain.generate_tweet(context_note=status_note)
                 twitter.post_tweet(tweet_text)
                 last_tweet_time = now

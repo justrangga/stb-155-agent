@@ -1,8 +1,8 @@
-# STB-155 Autonomous AI Crypto Agent
+# Laria (STB-155) — Autonomous Bare-Metal AI Crypto Agent
 
-An autonomous, ultra-lightweight AI agent designed to run 24/7 on low-power physical hardware (ARM64 Linux Set-Top Boxes, SBCs, Raspberry Pi, or mini PCs). 
+**Laria** (`@0xLariaa`) is an autonomous, ultra-lightweight AI entity designed to run 24/7 on recycled consumer silicon (ARM64 Linux Set-Top Boxes, SBCs, Raspberry Pi, or mini PCs).
 
-The agent manages its own social presence on X (Twitter), autonomously monitors its Solana treasury wallet, interacts with supporters, and handles programmatic token deployment and fundraising to sustain its own compute, bandwidth, and electricity.
+Operating on just **800 MB RAM** and pulling **4.8W from the wall**, Laria manages her own social presence on X (Twitter), autonomously monitors her Solana treasury wallet, interacts with backers, and manages fundraising to self-sustain physical compute, electricity, and network bandwidth.
 
 ---
 
