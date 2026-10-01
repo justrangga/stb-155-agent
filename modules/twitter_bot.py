@@ -97,7 +97,18 @@ class TwitterBot:
         if media_path and os.path.exists(media_path):
             try:
                 self.twikit_client.set_cookies(self.cookies)
-                media_id = await self.twikit_client.upload_media(media_path)
+                is_video = media_path.lower().endswith(('.mp4', '.mov', '.avi', '.m4v'))
+                if is_video:
+                    logger.info(f"[TwitterBot] Uploading video to Twitter: {media_path}...")
+                    media_id = await self.twikit_client.upload_media(
+                        media_path,
+                        wait_for_completion=True,
+                        media_type="video/mp4",
+                        media_category="tweet_video"
+                    )
+                else:
+                    media_id = await self.twikit_client.upload_media(media_path)
+
                 if media_id:
                     media_entities.append({"media_id": str(media_id), "tagged_users": []})
                     logger.info(f"[TwitterBot] Media uploaded successfully: {media_id}")

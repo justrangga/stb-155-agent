@@ -14,6 +14,8 @@ from modules.vitals import PhysicalVitals
 from modules.self_learning import SelfLearningEngine
 from modules.market_tracker import MarketTracker
 from modules.card_generator import CardGenerator
+from modules.trend_scout import TrendScout
+from modules.video_generator import VideoGenerator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -98,6 +100,8 @@ def main():
         data_dir=data_dir
     )
     card_generator = CardGenerator(data_dir=data_dir)
+    trend_scout = TrendScout(data_dir=data_dir)
+    video_generator = VideoGenerator(data_dir=data_dir)
 
     # Load persistent tracking states
     replied_mentions = set()
@@ -123,6 +127,10 @@ def main():
     last_market_check_time = 0
     last_card_time = time.time()
     card_interval_seconds = int(os.getenv("CARD_INTERVAL_SECONDS", "28800")) # every 8 hours
+    last_atm_scout_time = time.time()
+    atm_scout_interval_seconds = int(os.getenv("ATM_SCOUT_INTERVAL", "7200")) # every 2 hours
+    last_video_time = 0
+    video_interval_seconds = int(os.getenv("VIDEO_INTERVAL_SECONDS", "43200")) # every 12 hours
 
     # Jadwal interval awal (20-35 menit tweet, 15-25 menit promo)
     tweet_interval_seconds = int(os.getenv("TWEET_INTERVAL_SECONDS", str(random.randint(1200, 2100))))
@@ -302,6 +310,53 @@ def main():
                         logger.info("Visual Telemetry Card successfully posted!")
                 except Exception as e:
                     logger.error(f"Error pada telemetry card generator: {e}")
+
+            # H. Autonomous ATM Viral Trend Scout (Amati, Tiru, Modifikasi)
+            if now - last_atm_scout_time >= atm_scout_interval_seconds:
+                last_atm_scout_time = now
+                try:
+                    logger.info("Mengeksekusi ATM Trend Scout untuk memindai konten viral di X...")
+                    import asyncio
+                    viral_candidate = asyncio.run(trend_scout.scout_viral_tweet(twitter.twikit_client, twitter.cookies))
+                    if viral_candidate:
+                        atm_tweet = brain.generate_atm_tweet(
+                            observed_tweet=viral_candidate["text"],
+                            observed_author=viral_candidate["author"],
+                            learning_context=learning_ctx
+                        )
+                        logger.info(f"ATM Tweet berhasil digenerate (terinspirasi @{viral_candidate['author']}): {atm_tweet}")
+                        post_res = twitter.post_tweet(atm_tweet)
+                        if post_res:
+                            last_tweet_time = now
+                            logger.info("Berhasil memposting tweet ATM adaptif!")
+                except Exception as e:
+                    logger.error(f"Error pada ATM Trend Scout loop: {e}")
+
+            # I. Autonomous Video Generation & Upload
+            if last_video_time == 0 or (now - last_video_time >= video_interval_seconds):
+                try:
+                    logger.info("Menjalankan Autonomous Video Generator...")
+                    theme = random.choice(["silicon_pulse", "terminal_stream"])
+                    m_data = market_tracker.market_state
+                    vid_path = video_generator.generate_cyber_video(
+                        theme=theme,
+                        telemetry=telemetry,
+                        market_data=m_data
+                    )
+                    if vid_path and os.path.exists(vid_path):
+                        vid_caption = brain.generate_video_caption(
+                            theme=theme,
+                            telemetry=telemetry,
+                            market_data=m_data
+                        )
+                        logger.info(f"Posting Autonomous Video ({theme}) dengan caption: {vid_caption}")
+                        post_res = twitter.post_tweet(vid_caption, media_path=vid_path)
+                        if post_res:
+                            last_video_time = now
+                            last_tweet_time = now
+                            logger.info("Autonomous Video berhasil diposting ke X!")
+                except Exception as e:
+                    logger.error(f"Error pada video generator loop: {e}")
 
             # Tidur sejenak (45 detik agar cepat membalas mention baru)
             time.sleep(45)

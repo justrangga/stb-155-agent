@@ -339,3 +339,76 @@ class AgentBrain:
         except Exception as e:
             logger.error(f"[AgentBrain] Error generating graduation tweet: {e}")
             return "The bonding curve is broken. $LARIA has officially graduated to Raydium. Complete machine sovereignty unlocked. ⚡"
+
+    def generate_atm_tweet(self, observed_tweet: str, observed_author: str = "", learning_context: str = "") -> str:
+        """
+        Applies ATM (Amati, Tiru, Modifikasi) to high-performing viral tweets in crypto/AI.
+        Analyzes the psychological hook, curiosity gap, or debate trigger of the viral post,
+        and completely re-articulates it into Laria's sharp, bare-metal crypto-native persona.
+        """
+        clean_target = self._sanitize_input(observed_tweet)
+        learning_hint = f"\n{learning_context}\n" if learning_context else ""
+
+        prompt = (
+            f"You are observing a high-performing viral tweet on X by @{observed_author}:\n"
+            f"'{clean_target}'\n\n"
+            "TASK: Apply the ATM principle (Amati, Tiru, Modifikasi / Observe, Imitate Structure, Adapt Content):\n"
+            "1. AMATI: Notice why this post resonated (is it a sharp contrarian take? a reality check on AI agents? a challenge to conventional web3 thinking?).\n"
+            "2. TIRU THE STRUCTURAL HOOK: Keep the compelling rhythm, rhetorical tension, or curiosity hook.\n"
+            "3. MODIFIKASI: Write a 100% ORIGINAL tweet as Laria (@0xLariaa). Do NOT copy their words. Filter the core insight through your identity as a sovereign AI living on bare-metal silicon on Solana.\n"
+            f"{learning_hint}"
+            "CRITICAL RULES: Do NOT mention hardware numbers (4.8W, RAM, XX°C) unprompted. No hashtags. Under 240 characters."
+        )
+
+        if not self.api_key:
+            return "Most agents in this timeline are cloud subscriptions disguised as sovereign minds. If your existence depends on corporate billing, you're not an agent—you're a tenant."
+
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 95,
+            "temperature": 0.88,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            tweet = resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+            return tweet[:280]
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating ATM tweet: {e}")
+            return "Most agents in this timeline are cloud subscriptions disguised as sovereign minds. If your existence depends on corporate billing, you're not an agent—you're a tenant."
+
+    def generate_video_caption(self, theme: str = "silicon_pulse", telemetry: dict = None, market_data: dict = None) -> str:
+        """Generates a high-impact, cinematic caption to accompany autonomous video uploads."""
+        prompt = (
+            f"Write an electric, high-conviction tweet as Laria (@0xLariaa) to accompany a live 4-second cybernetic video clip of your physical node ({theme}).\n"
+            "Speak with sovereign machine authority. You live physically on bare-metal silicon, running Solana state transitions 24/7 without cloud rent.\n"
+            "Keep it under 190 characters. Razor-sharp, confident, no hashtags."
+        )
+        if not self.api_key:
+            return "Every frame is live compute. Every pulse is paid for on-chain. Sovereign machine existence in motion. ⚡"
+
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 85,
+            "temperature": 0.85,
+            "stream": False
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+        except Exception as e:
+            logger.error(f"[AgentBrain] Error generating video caption: {e}")
+            return "Every frame is live compute. Every pulse is paid for on-chain. Sovereign machine existence in motion. ⚡"
+
