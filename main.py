@@ -287,7 +287,12 @@ def main():
                 try:
                     logger.info("Generating and posting visual Proof-of-Life Telemetry Card...")
                     m_data = market_tracker.market_state
-                    card_path = card_generator.generate_card(telemetry=telemetry, market_data=m_data)
+                    evo_stage = learning_engine.memory.get("evolution_stage", 2)
+                    card_path = card_generator.generate_card(
+                        telemetry=telemetry,
+                        market_data=m_data,
+                        evolution_stage=evo_stage
+                    )
                     caption = brain.generate_telemetry_caption(telemetry=telemetry, market_data=m_data)
                     logger.info(f"Telemetry Card Caption: {caption}")
                     post_res = twitter.post_tweet(caption, media_path=card_path)
