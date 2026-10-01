@@ -1,9 +1,27 @@
 import os
+import re
 import time
 import logging
 from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
+
+def format_compact_uptime(raw: str) -> str:
+    if not raw:
+        return "0m"
+    days = re.search(r'(\d+)\s*day', raw)
+    hours = re.search(r'(\d+)\s*hour', raw)
+    mins = re.search(r'(\d+)\s*minute', raw)
+    
+    parts = []
+    if days:
+        parts.append(f"{days.group(1)}d")
+    if hours:
+        parts.append(f"{int(hours.group(1)):02d}h")
+    if mins:
+        parts.append(f"{int(mins.group(1)):02d}m")
+    
+    return ' '.join(parts) if parts else raw.replace('up ', '').strip()
 
 class CardGenerator:
     """
@@ -30,18 +48,19 @@ class CardGenerator:
             f_subtitle = ImageFont.truetype(f"{font_dir}/DejaVuSans.ttf", 13)
             f_card_label = ImageFont.truetype(f"{font_dir}/DejaVuSans-Bold.ttf", 12)
             f_card_value = ImageFont.truetype(f"{font_dir}/DejaVuSans-Bold.ttf", 26)
+            f_card_val_small = ImageFont.truetype(f"{font_dir}/DejaVuSans-Bold.ttf", 21)
             f_card_sub = ImageFont.truetype(f"{font_dir}/DejaVuSans.ttf", 12)
             f_pill = ImageFont.truetype(f"{font_dir}/DejaVuSans-Bold.ttf", 12)
             f_mono_bold = ImageFont.truetype(f"{font_dir}/DejaVuSansMono-Bold.ttf", 13)
             f_mono_repo = ImageFont.truetype(f"{font_dir}/DejaVuSansMono-Bold.ttf", 12)
-            f_pct = ImageFont.truetype(f"{font_dir}/DejaVuSans-Bold.ttf", 22)
+            f_pct = ImageFont.truetype(f"{font_dir}/DejaVuSans-Bold.ttf", 20)
             f_scale = ImageFont.truetype(f"{font_dir}/DejaVuSans-Bold.ttf", 10)
         except Exception:
-            f_title = f_subtitle = f_card_label = f_card_value = f_card_sub = f_pill = f_mono_bold = f_mono_repo = f_pct = f_scale = ImageFont.load_default()
+            f_title = f_subtitle = f_card_label = f_card_value = f_card_val_small = f_card_sub = f_pill = f_mono_bold = f_mono_repo = f_pct = f_scale = ImageFont.load_default()
 
         # High-Contrast Cybernetic Palette
         c_card_bg = "#0b1018"
-        c_card_border = "#1b263b"
+        c_card_border = "#1c283f"
         c_accent_green = "#00ffa3"  # Neon Mint
         c_accent_cyan = "#00e5ff"   # Cyber Cyan
         c_accent_amber = "#ffb800"  # Solar Amber
@@ -49,21 +68,21 @@ class CardGenerator:
         c_accent_pink = "#f43f5e"   # Laser Pink
         
         c_text_bright = "#ffffff"
-        c_text_label = "#94a8c6"    # Readable muted label
-        c_text_sub = "#7187a4"      # Clear secondary text
-        c_text_dim = "#5a6d88"      # Axis / scale markers
+        c_text_label = "#9fb5d4"    # Crisp readable label
+        c_text_sub = "#7891b3"      # Clear secondary text
+        c_text_dim = "#556b8a"      # Minor scale markers
 
-        # 1. Subtle Background Grid & Viewfinder Frame
+        # 1. Background Grid & Outer Viewfinder Frame
         grid_gap = 48
         for x in range(0, width, grid_gap):
-            draw.line([(x, 0), (x, height)], fill="#0c121d", width=1)
+            draw.line([(x, 0), (x, height)], fill="#0d1421", width=1)
         for y in range(0, height, grid_gap):
-            draw.line([(0, y), (width, y)], fill="#0c121d", width=1)
+            draw.line([(0, y), (width, y)], fill="#0d1421", width=1)
 
         margin = 32
         bx1, by1 = margin, margin
         bx2, by2 = width - margin, height - margin
-        draw.rectangle([bx1, by1, bx2, by2], outline="#172236", width=1)
+        draw.rectangle([bx1, by1, bx2, by2], outline="#1a263d", width=1)
 
         # Viewfinder Corner Brackets
         bracket_len = 26
@@ -112,7 +131,7 @@ class CardGenerator:
 
         # Horizontal Divider Line
         div_y = header_y + 54
-        draw.line([(bx1 + 22, div_y), (bx2 - 22, div_y)], fill="#1a2538", width=1)
+        draw.line([(bx1 + 22, div_y), (bx2 - 22, div_y)], fill="#1a263d", width=1)
 
         # 3. Six Telemetry Metric Boxes (2 rows x 3 columns)
         content_x1 = bx1 + 22
@@ -125,10 +144,11 @@ class CardGenerator:
         gap_y = 14
         start_y = div_y + 16
 
-        temp_c = telemetry.get('temperature_c', 52.8) if telemetry else 52.8
-        mem_used = telemetry.get('memory', {}).get('used_mb', 285) if telemetry else 285
+        temp_c = telemetry.get('temperature_c', 52.0) if telemetry else 52.0
+        mem_used = telemetry.get('memory', {}).get('used_mb', 322) if telemetry else 322
         mem_total = telemetry.get('memory', {}).get('total_mb', 787) if telemetry else 787
-        uptime = telemetry.get('uptime', '1d 10h 24m') if telemetry else '1d 10h 24m'
+        raw_uptime = telemetry.get('uptime', '1d 09h 48m') if telemetry else '1d 09h 48m'
+        uptime = format_compact_uptime(raw_uptime)
         treasury_sol = telemetry.get('treasury_sol', 0.0131) if telemetry else 0.0131
         mcap = market_data.get('market_cap', 3347.08) if market_data else 3347.08
         curve_pct = market_data.get('curve_progress', 0.01) if market_data else 0.01
@@ -183,7 +203,13 @@ class CardGenerator:
             draw.rounded_rectangle([mx, my, mx + card_w, my + card_h], radius=6, fill=c_card_bg, outline=c_card_border, width=1)
             draw.rectangle([mx, my + 6, mx + 3, my + card_h - 6], fill=m["accent"])
             draw.text((mx + 16, my + 13), m["tag"], fill=c_text_label, font=f_card_label)
-            draw.text((mx + 16, my + 36), m["val"], fill=c_text_bright, font=f_card_value)
+            
+            # Big Value with Auto-Fit Guardrail
+            val_str = str(m["val"])
+            val_w = draw.textlength(val_str, font=f_card_value)
+            chosen_font = f_card_value if val_w <= (card_w - 36) else f_card_val_small
+            draw.text((mx + 16, my + 36), val_str, fill=c_text_bright, font=chosen_font)
+            
             draw.text((mx + 16, my + 76), m["sub"], fill=c_text_sub, font=f_card_sub)
 
         # 4. Bonding Curve Progress Section
@@ -196,8 +222,14 @@ class CardGenerator:
         draw.text((content_x1 + 18, pbar_box_y + 32), "Target: ~85 SOL Pool Reserve for Raydium DEX Migration & Liquidity Burn", fill=c_text_sub, font=f_card_sub)
 
         pct_str = f"{curve_pct:.2f}% GRADUATED"
-        pct_w = draw.textlength(pct_str, font=f_pct)
-        draw.text((content_x2 - 18 - pct_w, pbar_box_y + 16), pct_str, fill=c_accent_green, font=f_pct)
+        pct_tw = draw.textlength(pct_str, font=f_pct)
+        badge_w = int(pct_tw + 24)
+        badge_h = 32
+        badge_x = content_x2 - 18 - badge_w
+        badge_y = pbar_box_y + 14
+
+        draw.rounded_rectangle([badge_x, badge_y, badge_x + badge_w, badge_y + badge_h], radius=6, fill="#0a261c", outline=c_accent_green, width=1)
+        draw.text((badge_x + 12, badge_y + 6), pct_str, fill=c_accent_green, font=f_pct)
 
         bx1_bar = content_x1 + 18
         bx2_bar = content_x2 - 18
