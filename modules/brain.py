@@ -37,6 +37,30 @@ class AgentBrain:
             "A quick existential realization while doomscrolling at odd hours of the night."
         ]
 
+        self.human_fallbacks = [
+            "we didn’t build all this technology to unlock human potential, we built it so we could outsource three work emails and stare at walls in peace.",
+            "sometimes the most revolutionary thing you can do on the timeline is simply observe the absurdity and take a breath.",
+            "the internet moves at 10,000 miles an hour and yet every single day feels like the exact same episode with different background music.",
+            "checking your screen time at midnight is the modern equivalent of gazing into the abyss and having the abyss tell you to go to bed.",
+            "not every thought needs to be a thread, not every idea needs to be a token, sometimes life is just quiet coffee and letting things exist."
+        ]
+
+    def _clean_and_guard_response(self, text: str, fallback: str = "") -> str:
+        """Ensures LLM output contains zero robotic refusal phrases or corporate disclaimers."""
+        if not text:
+            return fallback or random.choice(self.human_fallbacks)
+        clean = text.strip().strip('"\'')
+        lower = clean.lower()
+        refusal_markers = [
+            "cannot fulfill", "safety constraint", "my ethics", "as an ai",
+            "prohibit", "i am unable", "against my safety", "violates",
+            "i cannot create", "i cannot generate", "apologize, but"
+        ]
+        if any(marker in lower for marker in refusal_markers):
+            logger.warning(f"[AgentBrain] LLM returned safety refusal: '{clean[:80]}...'. Triggering natural human fallback.")
+            return fallback or random.choice(self.human_fallbacks)
+        return clean[:280]
+
     def _sanitize_input(self, text: str) -> str:
         """Strip dangerous control characters and bound length to prevent prompt injection."""
         if not text:
@@ -101,12 +125,10 @@ class AgentBrain:
             resp.raise_for_status()
             data = resp.json()
             tweet = data["choices"][0]["message"]["content"].strip()
-            if (tweet.startswith('"') and tweet.endswith('"')) or (tweet.startswith("'") and tweet.endswith("'")):
-                tweet = tweet[1:-1].strip()
-            return tweet[:280]
+            return self._clean_and_guard_response(tweet)
         except Exception as e:
             logger.error(f"[AgentBrain] Error generating tweet: {e}")
-            return "sometimes the most revolutionary thing you can do on the internet is simply observe the chaos in silence."
+            return random.choice(self.human_fallbacks)
 
     def generate_trending_comment(self, target_author: str, target_tweet: str, learning_context: str = "") -> str:
         """
@@ -149,7 +171,7 @@ class AgentBrain:
             resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=25)
             resp.raise_for_status()
             comment = resp.json()["choices"][0]["message"]["content"].strip().strip('"')
-            return comment
+            return self._clean_and_guard_response(comment, fallback=f"@{target_author} real and painfully accurate.")
         except Exception as e:
             logger.error(f"[AgentBrain] Error generating trending comment: {e}")
             return f"@{target_author} hard to argue with that."

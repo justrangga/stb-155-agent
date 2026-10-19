@@ -7,6 +7,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+BANNED_CONTENT_KEYWORDS = [
+    "video viral", "bokep", "18+", "skandal", "leak", "doxx", "onlyfans",
+    "porn", "xxx", "link viral", "t.me/", "tele", "pemerkosaan", "bunuh", "judi",
+    "slot gacor", "zeus", "presale", "airdrop", "send sol to"
+]
+
 class TrendScout:
     """
     Live Trending Intelligence Engine for Laria.
@@ -91,9 +97,9 @@ class TrendScout:
                 if len(text.strip()) < 25:
                     continue
 
-                # Filter out obvious bot airdrop scams
+                # Filter out obvious bot scams, leaks, or NSFW drama
                 lower_text = text.lower()
-                if "presale" in lower_text or "t.me/" in lower_text or "airdrop" in lower_text or "send sol to" in lower_text:
+                if any(bad in lower_text for bad in BANNED_CONTENT_KEYWORDS):
                     continue
 
                 likes = getattr(t, "favorite_count", 0) or 0
@@ -139,7 +145,7 @@ class TrendScout:
                     continue
 
                 lower_text = text.lower()
-                if "presale" in lower_text or "t.me/" in lower_text or "airdrop" in lower_text:
+                if any(bad in lower_text for bad in BANNED_CONTENT_KEYWORDS):
                     continue
 
                 likes = getattr(t, "favorite_count", 0) or 0
@@ -167,17 +173,19 @@ class TrendScout:
         Discovers the best currently trending topic/tweet to inspire Laria's next original tweet.
         Uses Amati-Tiru-Modifikasi to craft an original, authentic, living human take.
         """
-        twikit_client.set_cookies(cookies)
+        from twikit import Client
+        active_client = Client(language="en-US")
+        active_client.set_cookies(cookies)
 
         all_candidates = []
 
         # 1. First priority: Live Timeline (real-time buzz)
-        tl_candidates = await self._fetch_timeline_candidates(twikit_client, count=25)
+        tl_candidates = await self._fetch_timeline_candidates(active_client, count=25)
         all_candidates.extend(tl_candidates)
 
         # 2. Second priority: Rotating popular query search
         query = random.choice(self.general_trending_queries)
-        search_candidates = await self._fetch_search_candidates(twikit_client, query, count=8)
+        search_candidates = await self._fetch_search_candidates(active_client, query, count=8)
         all_candidates.extend(search_candidates)
 
         # Filter out already seen inspirations
@@ -208,17 +216,23 @@ class TrendScout:
         Finds a high-impact trending tweet that Laria should comment on.
         Criteria: High engagement (>25 likes or >500 views), active discussion, not yet commented.
         """
-        twikit_client.set_cookies(cookies)
+        try:
+            from twikit import Client
+            active_client = Client(language="en-US")
+            active_client.set_cookies(cookies)
+        except Exception:
+            active_client = twikit_client
+            active_client.set_cookies(cookies)
 
         all_candidates = []
 
         # Fetch from live timeline
-        tl_candidates = await self._fetch_timeline_candidates(twikit_client, count=25)
+        tl_candidates = await self._fetch_timeline_candidates(active_client, count=25)
         all_candidates.extend(tl_candidates)
 
         # Fetch from a random general query
         query = random.choice(self.general_trending_queries)
-        search_candidates = await self._fetch_search_candidates(twikit_client, query, count=8)
+        search_candidates = await self._fetch_search_candidates(active_client, query, count=8)
         all_candidates.extend(search_candidates)
 
         # Filter: must not be commented before, must have decent engagement
