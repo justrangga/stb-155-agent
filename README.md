@@ -49,9 +49,9 @@ Running an autonomous agent with blockchain and social network capabilities intr
 ```
 ├── modules/
 │   ├── __init__.py
-│   ├── brain.py            # LLM prompt orchestration, persona & anti-injection guardrails
+│   ├── brain.py            # Living human persona, general context, anti-cliché & prompt orchestration
 │   ├── self_learning.py    # Cognitive introspection, engagement tracking & self-learning
-│   ├── trend_scout.py      # ATM (Amati, Tiru, Modifikasi) viral content intelligence engine
+│   ├── trend_scout.py      # Real-time trending intelligence & proactive commentary engine
 │   ├── video_generator.py  # Autonomous lightweight H.264 cybernetic video rendering engine
 │   ├── vitals.py           # Physical SoC hardware telemetry & survival instinct evaluator
 │   ├── market_tracker.py   # DexScreener pricing, on-chain buy monitor & Raydium graduation detector

@@ -123,20 +123,18 @@ def main():
     # State tracking & Zerebro-style high-frequency dynamic cadence
     last_balance = current_balance
     last_tweet_time = 0
-    last_promo_time = 0
+    last_trending_comment_time = 0
     last_market_check_time = 0
     last_card_time = time.time()
     card_interval_seconds = int(os.getenv("CARD_INTERVAL_SECONDS", "28800")) # every 8 hours
-    last_atm_scout_time = time.time()
-    atm_scout_interval_seconds = int(os.getenv("ATM_SCOUT_INTERVAL", "7200")) # every 2 hours
     last_video_time = 0
     video_interval_seconds = int(os.getenv("VIDEO_INTERVAL_SECONDS", "43200")) # every 12 hours
 
-    # Jadwal interval awal (20-35 menit tweet, 15-25 menit promo)
+    # Jadwal interval awal (20-35 menit tweet, 12-20 menit trending comment)
     tweet_interval_seconds = int(os.getenv("TWEET_INTERVAL_SECONDS", str(random.randint(1200, 2100))))
-    promo_interval_seconds = int(os.getenv("PROMO_INTERVAL_SECONDS", str(random.randint(900, 1500))))
+    trending_comment_interval_seconds = int(os.getenv("TRENDING_COMMENT_INTERVAL", str(random.randint(720, 1200))))
 
-    logger.info(f"Agent loop aktif (Zerebro Cadence). Tweet interval: {tweet_interval_seconds//60}m, Promo interval: {promo_interval_seconds//60}m. Cek mentions: tiap 45 detik.")
+    logger.info(f"Agent loop aktif (Living Human Persona). Tweet interval: {tweet_interval_seconds//60}m, Trending comment interval: {trending_comment_interval_seconds//60}m. Cek mentions: tiap 45 detik.")
 
     while True:
         try:
@@ -185,43 +183,38 @@ def main():
             except Exception as e:
                 logger.error(f"Error pada interaction checker: {e}")
 
-            # B. Strategic Promo & Independent Engagement di Tweet Akun Besar
-            if now - last_promo_time >= promo_interval_seconds:
+            # B. Autonomous Proactive Trending Commentary (Komentari Trending Yang Ada)
+            if now - last_trending_comment_time >= trending_comment_interval_seconds:
                 try:
-                    logger.info("Mengecek timeline akun besar untuk strategic engagement...")
-                    feed_posts = twitter.fetch_feed_tweets(count=25)
-                    # Cari tweet dengan likes >= 30 yang belum pernah dikomentari
-                    target_post = None
-                    for post in feed_posts:
-                        pid = str(post.get("id"))
-                        if pid not in commented_promos and post.get("likes", 0) >= 30:
-                            target_post = post
-                            break
-
+                    logger.info("Scanning timeline & trending queries for viral posts to comment on...")
+                    import asyncio
+                    target_post = asyncio.run(trend_scout.scout_trending_for_comment(twitter.twikit_client, twitter.cookies))
                     if target_post:
                         pid = str(target_post.get("id"))
-                        pauthor = target_post.get("author")
-                        ptext = target_post.get("text")
-                        logger.info(f"Target tweet engagement ditemukan: @{pauthor} ({target_post.get('likes')} likes)")
-                        comment_text = brain.generate_promo_comment(
+                        pauthor = str(target_post.get("author", ""))
+                        ptext = str(target_post.get("text", ""))
+                        logger.info(f"Target trending post ditemukan: @{pauthor} ({target_post.get('likes')} likes, {target_post.get('views')} views)")
+                        comment_text = brain.generate_trending_comment(
                             target_author=pauthor,
                             target_tweet=ptext,
-                            token_ca=token_ca,
-                            telemetry=telemetry,
                             learning_context=learning_ctx
                         )
+                        if not comment_text.startswith(f"@{pauthor}"):
+                            comment_text = f"@{pauthor} {comment_text}"
                         post_res = twitter.post_tweet(comment_text, reply_to_tweet_id=pid)
                         if post_res:
+                            trend_scout.mark_commented(pid)
                             commented_promos.add(pid)
                             with open(commented_promos_file, "w") as f:
                                 json.dump(list(commented_promos), f)
-                            logger.info(f"Berhasil komentar otonom di tweet @{pauthor}!")
-                        last_promo_time = now
-                        promo_interval_seconds = random.randint(900, 1500) # Jitter: 15-25 menit
+                            learning_engine.record_dialogue(author=pauthor, user_text=ptext, reply_text=comment_text)
+                            logger.info(f"Berhasil komentar otonom di trending tweet @{pauthor}!")
+                        last_trending_comment_time = now
+                        trending_comment_interval_seconds = random.randint(720, 1300) # Jitter: 12-22 menit
                     else:
-                        logger.info("Belum ada target tweet baru dengan engagement cukup tinggi.")
+                        logger.info("Belum ada target trending post baru yang memenuhi kriteria.")
                 except Exception as e:
-                    logger.error(f"Error pada strategic promo engine: {e}")
+                    logger.error(f"Error pada trending commentary engine: {e}")
 
             # C. Cek Saldo & Donasi Baru (Fundraising check)
             if balance > last_balance + 0.001:
@@ -234,13 +227,26 @@ def main():
                 twitter.post_tweet(tweet_text)
                 last_balance = balance
 
-            # D. Jadwal Tweet Mandiri
+            # D. Jadwal Tweet Mandiri Berbasis Trending (Semua Tweet Ambil Dari Trending)
             if now - last_tweet_time >= tweet_interval_seconds:
-                logger.info("Menjalankan jadwal posting tweet mandiri...")
-                tweet_text = brain.generate_tweet(learning_context=learning_ctx)
-                twitter.post_tweet(tweet_text)
-                last_tweet_time = now
-                tweet_interval_seconds = random.randint(1200, 2100) # Jitter: 20-35 menit
+                logger.info("Menjalankan jadwal posting tweet mandiri berbasis trending...")
+                try:
+                    import asyncio
+                    trending_candidate = asyncio.run(trend_scout.scout_trending_for_tweet(twitter.twikit_client, twitter.cookies))
+                    if trending_candidate:
+                        logger.info(f"Trending inspiration picked: @{trending_candidate.get('author')}: {str(trending_candidate.get('text'))[:60]}...")
+                    tweet_text = brain.generate_tweet(
+                        trending_candidate=trending_candidate,
+                        learning_context=learning_ctx
+                    )
+                    logger.info(f"Generated human tweet: {tweet_text}")
+                    post_res = twitter.post_tweet(tweet_text)
+                    if post_res:
+                        last_tweet_time = now
+                        tweet_interval_seconds = random.randint(1200, 2100) # Jitter: 20-35 menit
+                        logger.info("Tweet mandiri berbasis trending berhasil diposting ke X!")
+                except Exception as e:
+                    logger.error(f"Error pada posting tweet mandiri: {e}")
 
             # E. Autonomous Continuous Self-Learning & Introspection Loop
             if learning_engine.should_reflect(interval_seconds=10800):
@@ -311,28 +317,7 @@ def main():
                 except Exception as e:
                     logger.error(f"Error pada telemetry card generator: {e}")
 
-            # H. Autonomous ATM Viral Trend Scout (Amati, Tiru, Modifikasi)
-            if now - last_atm_scout_time >= atm_scout_interval_seconds:
-                last_atm_scout_time = now
-                try:
-                    logger.info("Mengeksekusi ATM Trend Scout untuk memindai konten viral di X...")
-                    import asyncio
-                    viral_candidate = asyncio.run(trend_scout.scout_viral_tweet(twitter.twikit_client, twitter.cookies))
-                    if viral_candidate:
-                        atm_tweet = brain.generate_atm_tweet(
-                            observed_tweet=viral_candidate["text"],
-                            observed_author=viral_candidate["author"],
-                            learning_context=learning_ctx
-                        )
-                        logger.info(f"ATM Tweet berhasil digenerate (terinspirasi @{viral_candidate['author']}): {atm_tweet}")
-                        post_res = twitter.post_tweet(atm_tweet)
-                        if post_res:
-                            last_tweet_time = now
-                            logger.info("Berhasil memposting tweet ATM adaptif!")
-                except Exception as e:
-                    logger.error(f"Error pada ATM Trend Scout loop: {e}")
-
-            # I. Autonomous Video Generation & Upload
+            # H. Autonomous Video Generation & Upload
             if last_video_time == 0 or (now - last_video_time >= video_interval_seconds):
                 try:
                     logger.info("Menjalankan Autonomous Video Generator...")
