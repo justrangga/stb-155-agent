@@ -16,6 +16,7 @@ from modules.market_tracker import MarketTracker
 from modules.card_generator import CardGenerator
 from modules.trend_scout import TrendScout
 from modules.video_generator import VideoGenerator
+from modules.pump_callout import PumpFunCallout
 
 logging.basicConfig(
     level=logging.INFO,
@@ -99,6 +100,10 @@ def main():
         rpc_url=solana_rpc,
         data_dir=data_dir
     )
+    pump_callout = PumpFunCallout(
+        token_mint=token_ca or "CVoZBDAtF5ShDYYem3zgdnmHZTSnPbpLSyKSoHdQQTpq",
+        callout_id="630615d3-2ff3-4d1d-b6e0-7192825901ee"
+    )
     card_generator = CardGenerator(data_dir=data_dir)
     trend_scout = TrendScout(data_dir=data_dir)
     video_generator = VideoGenerator(data_dir=data_dir)
@@ -129,12 +134,14 @@ def main():
     card_interval_seconds = int(os.getenv("CARD_INTERVAL_SECONDS", "28800")) # every 8 hours
     last_video_time = 0
     video_interval_seconds = int(os.getenv("VIDEO_INTERVAL_SECONDS", "43200")) # every 12 hours
+    last_pump_callout_time = time.time() - 3000 # schedule first callout in ~10m or right after startup
+    pump_callout_interval_seconds = int(os.getenv("PUMP_CALLOUT_INTERVAL_SECONDS", str(random.randint(3600, 5400)))) # 60 - 90 menit
 
     # Jadwal interval awal (20-35 menit tweet, 12-20 menit trending comment)
     tweet_interval_seconds = int(os.getenv("TWEET_INTERVAL_SECONDS", str(random.randint(1200, 2100))))
     trending_comment_interval_seconds = int(os.getenv("TRENDING_COMMENT_INTERVAL", str(random.randint(720, 1200))))
 
-    logger.info(f"Agent loop aktif (Living Human Persona). Tweet interval: {tweet_interval_seconds//60}m, Trending comment interval: {trending_comment_interval_seconds//60}m. Cek mentions: tiap 45 detik.")
+    logger.info(f"Agent loop aktif (Living Human Persona). Tweet: {tweet_interval_seconds//60}m, Trending comment: {trending_comment_interval_seconds//60}m, Pump.fun callout: {pump_callout_interval_seconds//60}m. Mentions: tiap 45s.")
 
     while True:
         try:
@@ -342,6 +349,26 @@ def main():
                             logger.info("Autonomous Video berhasil diposting ke X!")
                 except Exception as e:
                     logger.error(f"Error pada video generator loop: {e}")
+
+            # I. Periodic Autonomous Callout Updates on Pump.fun
+            if last_pump_callout_time == 0 or (now - last_pump_callout_time >= pump_callout_interval_seconds):
+                try:
+                    logger.info("Menjalankan autonomous Pump.fun Callout thread update...")
+                    res = pump_callout.execute_scheduled_update(
+                        brain=brain,
+                        market_tracker=market_tracker,
+                        telemetry=telemetry,
+                        self_learning=learning_engine,
+                        card_generator=card_generator
+                    )
+                    if res and res.get("replyId"):
+                        last_pump_callout_time = now
+                        pump_callout_interval_seconds = random.randint(3600, 5400) # 60 - 90 menit
+                        logger.info(f"Pump.fun Callout update berhasil diposting: {res.get('replyId')}")
+                    elif res and res.get("status") == "cooldown":
+                        logger.info("Pump.fun Callout masih cooldown (min 2m), coba lagi di siklus berikutnya.")
+                except Exception as e:
+                    logger.error(f"Error pada Pump.fun callout update loop: {e}")
 
             # Tidur sejenak (45 detik agar cepat membalas mention baru)
             time.sleep(45)
