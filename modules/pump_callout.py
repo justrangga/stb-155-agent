@@ -191,9 +191,10 @@ class PumpFunCallout:
         curve_pct = 0.0
         mcap_usd = 0.0
         sol_price = 0.0
+        state = {}
         if market_tracker:
             try:
-                state = market_tracker.get_bonding_curve_state()
+                state = market_tracker.fetch_market_data()
                 curve_pct = state.get("curve_progress_pct", 0.0)
                 mcap_usd = state.get("market_cap_usd", 0.0)
                 sol_price = state.get("sol_price_usd", 0.0)
@@ -202,24 +203,25 @@ class PumpFunCallout:
 
         # 2. Hardware vitals
         v_data = telemetry or {}
-        cpu_temp = v_data.get("cpu_temp", 50.0)
-        uptime = v_data.get("uptime_str", "24h+")
-        ram_used = v_data.get("ram_used_mb", 65.0)
+        cpu_temp = v_data.get("temperature_c", 50.0)
+        uptime = v_data.get("uptime", "24h+")
+        mem_dict = v_data.get("memory", {})
+        ram_used = mem_dict.get("used_mb", 65.0) if isinstance(mem_dict, dict) else 65.0
 
         # 3. Cognitive stage
-        stage_num = 1
-        if self_learning:
-            try:
-                mem = self_learning.load_memory()
-                stage_num = mem.get("stage", 1)
-            except Exception:
-                pass
+        stage_num = 2
+        if self_learning and hasattr(self_learning, "memory"):
+            stage_num = self_learning.memory.get("evolution_stage", 2)
 
         # 4. Generate card if generator available
         card_path = None
         if card_generator:
             try:
-                card_path = card_generator.generate_card()
+                card_path = card_generator.generate_card(
+                    telemetry=v_data,
+                    market_data=state if 'state' in locals() else {},
+                    evolution_stage=stage_num
+                )
             except Exception as e:
                 logger.warning(f"[PumpCallout] Failed generating telemetry card: {e}")
 
