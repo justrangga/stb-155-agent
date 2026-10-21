@@ -404,3 +404,72 @@ class TwitterBot:
         except Exception as e:
             logger.error(f"[TwitterBot] Error fetching feed tweets: {e}")
             return []
+
+    def update_profile(self, name: str | None = None, description: str | None = None, location: str | None = None, url: str | None = None) -> dict:
+        """Updates account profile metadata (Name, Bio, Location, Website) via Web Session."""
+        if self.mode != "cookie":
+            return {"status": "error", "error": "Not in cookie mode"}
+
+        import asyncio
+        async def _run():
+            await self._ensure_transaction_engine()
+            path = "/1.1/account/update_profile.json"
+            tid = self.twikit_client.client_transaction.generate_transaction_id(method="POST", path=path)
+            headers = {
+                "authorization": f"Bearer {PUBLIC_WEB_BEARER}",
+                "x-csrf-token": self.ct0,
+                "x-twitter-active-user": "yes",
+                "x-twitter-auth-type": "OAuth2Session",
+                "x-client-transaction-id": tid,
+                "referer": "https://x.com/settings/profile",
+                "origin": "https://x.com"
+            }
+            data = {}
+            if name: data["name"] = name
+            if description: data["description"] = description
+            if location: data["location"] = location
+            if url: data["url"] = url
+
+            r = cffi_requests.post("https://api.twitter.com" + path, data=data, headers=headers, cookies=self.cookies, impersonate="chrome124", timeout=20)
+            if r.status_code == 200:
+                logger.info(f"[TwitterBot] Profile updated successfully: {r.json().get('screen_name')}")
+                return {"status": "success", "data": r.json()}
+            else:
+                logger.error(f"[TwitterBot] Failed to update profile ({r.status_code}): {r.text}")
+                return {"status": "error", "code": r.status_code, "error": r.text}
+
+        return asyncio.run(_run())
+
+    def update_profile_image(self, image_path: str) -> dict:
+        """Uploads and updates account profile avatar via base64 encoded image."""
+        if self.mode != "cookie" or not os.path.exists(image_path):
+            return {"status": "error", "error": "Invalid mode or image file not found"}
+
+        import asyncio
+        import base64
+        async def _run():
+            await self._ensure_transaction_engine()
+            path = "/1.1/account/update_profile_image.json"
+            tid = self.twikit_client.client_transaction.generate_transaction_id(method="POST", path=path)
+            headers = {
+                "authorization": f"Bearer {PUBLIC_WEB_BEARER}",
+                "x-csrf-token": self.ct0,
+                "x-twitter-active-user": "yes",
+                "x-twitter-auth-type": "OAuth2Session",
+                "x-client-transaction-id": tid,
+                "referer": "https://x.com/settings/profile",
+                "origin": "https://x.com"
+            }
+            with open(image_path, "rb") as f:
+                img_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+            r = cffi_requests.post("https://api.twitter.com" + path, data={"image": img_b64}, headers=headers, cookies=self.cookies, impersonate="chrome124", timeout=30)
+            if r.status_code == 200:
+                new_url = r.json().get("profile_image_url_https")
+                logger.info(f"[TwitterBot] Profile image updated successfully: {new_url}")
+                return {"status": "success", "image_url": new_url}
+            else:
+                logger.error(f"[TwitterBot] Failed to update profile image ({r.status_code}): {r.text}")
+                return {"status": "error", "code": r.status_code, "error": r.text}
+
+        return asyncio.run(_run())
