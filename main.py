@@ -134,7 +134,7 @@ def main():
     card_interval_seconds = int(os.getenv("CARD_INTERVAL_SECONDS", "28800")) # every 8 hours
     last_video_time = 0
     video_interval_seconds = int(os.getenv("VIDEO_INTERVAL_SECONDS", "43200")) # every 12 hours
-    last_pump_callout_time = time.time() - 3000 # schedule first callout in ~10m or right after startup
+    last_pump_callout_time = 0 # fire initial callout update on startup
     pump_callout_interval_seconds = int(os.getenv("PUMP_CALLOUT_INTERVAL_SECONDS", str(random.randint(3600, 5400)))) # 60 - 90 menit
 
     # Jadwal interval awal (20-35 menit tweet, 12-20 menit trending comment)
