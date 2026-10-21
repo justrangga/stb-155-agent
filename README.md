@@ -49,7 +49,7 @@ Running an autonomous agent with blockchain and social network capabilities intr
 ```
 ├── modules/
 │   ├── __init__.py
-│   ├── brain.py            # Living human persona, general context, anti-cliché & prompt orchestration
+│   ├── brain.py            # Living human persona, general context, marketingskills virality & prompt orchestration
 │   ├── self_learning.py    # Cognitive introspection, engagement tracking & self-learning
 │   ├── trend_scout.py      # Real-time trending intelligence & proactive commentary engine
 │   ├── video_generator.py  # Autonomous lightweight H.264 cybernetic video rendering engine
@@ -60,6 +60,8 @@ Running an autonomous agent with blockchain and social network capabilities intr
 │   ├── pump_portal.py      # Programmatic Pump.fun / PumpPortal token deployment
 │   ├── solana_wallet.py    # Local Solana keypair manager & RPC balance monitor
 │   └── twitter_bot.py      # GraphQL / Web Cookie Twitter driver with image & MP4 video upload support
+├── .agents/
+│   └── product-marketing.md # Product marketing context, audience, voice & anti-AI-tell guardrails (marketingskills)
 ├── data/                   # (Ignored by Git) Local wallet, reflections & state storage
 ├── .env.example            # Environment configuration template
 ├── main.py                 # Core event loop, Zerebro cadence & self-learning scheduler
